@@ -7,7 +7,6 @@ import sys
 import tarfile
 from pathlib import Path
 from typing import Optional
-from urllib.parse import urlsplit
 
 import numpy as np
 from more_itertools import always_iterable
@@ -28,7 +27,7 @@ from yt.utilities.object_registries import (
     output_type_registry,
     simulation_time_series_registry,
 )
-from yt.utilities.on_demand_imports import _pooch as pooch
+from yt.utilities.on_demand_imports import _pooch as pooch, _requests as requests
 
 # --- Loaders for known data formats ---
 
@@ -1419,7 +1418,15 @@ def load_sample(
     mylog.info("Downloading from %s", specs["url"])
 
     # downloading via a pooch.Pooch instance behind the scenes
-    filename = urlsplit(specs["url"]).path.split("/")[-1]
+
+    # remove last element ("/download") from url
+    url, _, _d = specs["url"].rpartition("/")
+    assert _d == "download"
+
+    response = requests.get(url)
+    if not response.ok:
+        raise RuntimeError("Failed to retrieve dataset metadata.")
+    filename = response.json()["name"]
 
     tmp_file = _download_sample_data_file(
         filename, progressbar=progressbar, timeout=timeout
