@@ -9,6 +9,39 @@ from .fields import GizmoFieldInfo
 class GizmoDataset(GadgetHDF5Dataset):
     _field_info_class = GizmoFieldInfo
 
+    def __init__(
+        self,
+        filename,
+        dataset_type="gizmo_hdf5",
+        unit_base=None,
+        index_order=None,
+        index_filename=None,
+        kernel_name=None,
+        bounding_box=None,
+        units_override=None,
+        unit_system="cgs",
+        default_species_fields=None,
+    ):
+        self.storage_filename = None
+        filename = os.path.abspath(filename)
+        if units_override is not None:
+            raise RuntimeError(
+                "units_override is not supported for GizmoDataset. "
+                "Use unit_base instead."
+            )
+        super().__init__(
+            filename,
+            dataset_type,
+            unit_base=unit_base,
+            index_order=index_order,
+            index_filename=index_filename,
+            kernel_name=kernel_name,
+            bounding_box=bounding_box,
+            unit_system=unit_system,
+            default_species_fields=default_species_fields,
+        )
+
+
     @classmethod
     def _is_valid(cls, filename, *args, **kwargs):
         need_groups = ["Header"]

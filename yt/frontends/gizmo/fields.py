@@ -57,6 +57,8 @@ class GizmoFieldInfo(GadgetFieldInfo):
             setup_species_fields(self, ptype)
         if ptype in ("PartType4",):
             self.setup_star_particle_fields(ptype)
+        if (ptype, "PhotonEnergy") in self.field_list:
+            self.setup_five_rad_bins(ptype)
 
     def setup_gas_particle_fields(self, ptype):
         super().setup_gas_particle_fields(ptype)
@@ -171,3 +173,26 @@ class GizmoFieldInfo(GadgetFieldInfo):
             function=_age,
             units=self.ds.unit_system["time"],
         )
+
+    def setup_five_rad_bins(self, ptype):
+        """
+        This function breaks the PhotonEnergy field (if present)
+        into its five component photon energy bin fields and adds
+        these fields which will later get smoothed
+        """
+        bin_names = ["Ion", "FUV", "NUV", "Opt", "MIR"]
+
+        for i, bin_name in enumerate(bin_names):
+            # add the separate photon fields
+            def _Bin_wrap(i):
+                def _Bin(field, data):
+                    out = data[ptype, "PhotonEnergy"][:, i]
+                    return data.ds.arr(out.d, "code_length**2*code_mass/code_time**2")
+                return _Bin
+
+            self.add_field(
+                (ptype, bin_name + "_Energy"),
+                sampling_type="particle",
+                function=_Bin_wrap(i),
+                units=self.ds.unit_system["energy"],
+            )
